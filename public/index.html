@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Typing Speed Tester</title>
+  <style>
+    :root {
+      --teal: #4EB5A9;
+      --deep-purple: #2F284F;
+      --violet: #6157E1;
+      --slate: #374854;
+      --white: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light {
+      background: #f3f6f9;
+      color: var(--slate);
+    }
+
+    body.dark {
+      background-color: var(--deep-purple);
+      color: var(--white);
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 30px;
+      border-radius: 16px;
+      background-color: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 30px;
+      color: var(--violet);
+      margin-bottom: 25px;
+    }
+
+    #quote {
+      font-size: 18px;
+      line-height: 1.6;
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      min-height: 90px;
+      margin-bottom: 15px;
+    }
+
+    .light #quote {
+      background-color: #e7eef0;
+    }
+
+    #quote span.correct {
+      color: #4caf50;
+    }
+
+    #quote span.incorrect {
+      color: #e53935;
+      text-decoration: underline;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+      resize: none;
+    }
+
+    .dark textarea {
+      background: #413A6F;
+      color: var(--white);
+      border: 1px solid #777;
+    }
+
+    .stats p {
+      margin: 8px 0;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px 20px;
+      background-color: var(--teal);
+      color: var(--white);
+      font-size: 15px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background-color: var(--violet);
+    }
+
+    .mode-toggle {
+      margin-top: 15px;
+    }
+
+    .mode-toggle label {
+      margin-right: 20px;
+    }
+
+    .custom-input input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    .theme-toggle {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .theme-toggle button {
+      background-color: var(--violet);
+      color: var(--white);
+      border-radius: 8px;
+      padding: 10px 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .theme-toggle button:hover {
+      background-color: var(--teal);
+    }
+  </style>
+</head>
+<body class="light">
+  <div class="container">
+    <div class="theme-toggle">
+      <button id="toggleTheme">🌗 Toggle Light / Dark Mode</button>
+    </div>
+
+    <h1>Typing Speed Tester</h1>
+
+    <div class="mode-toggle">
+      <label><input type="radio" name="mode" value="default" checked> Default Text</label>
+      <label><input type="radio" name="mode" value="custom"> Custom Text</label>
+    </div>
+
+    <div class="custom-input" id="customTextBox" style="display: none;">
+      <input type="text" id="customText" placeholder="Enter your custom text here...">
+    </div>
+
+    <div id="quote"></div>
+    <textarea id="input" rows="5" placeholder="Start typing here..."></textarea>
+
+    <div class="stats">
+      <p id="wpm">WPM: 0</p>
+      <p id="accuracy">Accuracy: 100%</p>
+      <p id="time">Time: 0s</p>
+      <p id="best">🏆 Best WPM: <span id="bestWpm">0</span></p>
+    </div>
+
+    <button id="restart">🔁 Start / Restart</button>
+  </div>
+
+  <script>
+    const quotes = [
+      "Typing tests improve speed and accuracy.",
+      "Practice typing every day for better results.",
+      "JavaScript makes websites dynamic and interactive.",
+      "Your biggest challenge is your best opportunity.",
+      "Fast fingers and sharp minds build code."
+    ];
+
+    const quoteDisplay = document.getElementById("quote");
+    const inputField = document.getElementById("input");
+    const wpmDisplay = document.getElementById("wpm");
+    const accuracyDisplay = document.getElementById("accuracy");
+    const timeDisplay = document.getElementById("time");
+    const bestWpmDisplay = document.getElementById("bestWpm");
+    const restartBtn = document.getElementById("restart");
+    const customTextBox = document.getElementById("customTextBox");
+    const customTextInput = document.getElementById("customText");
+    const themeToggleBtn = document.getElementById("toggleTheme");
+
+    let quote = "", startTime = null, interval = null;
+
+    function updateBestWpm(wpm) {
+      const best = parseInt(localStorage.getItem("bestWpm") || "0", 10);
+      if (wpm > best) {
+        localStorage.setItem("bestWpm", wpm);
+        bestWpmDisplay.textContent = wpm;
+      }
+    }
+
+    function loadBestWpm() {
+      bestWpmDisplay.textContent = localStorage.getItem("bestWpm") || "0";
+    }
+
+    function setQuoteText(text) {
+      quote = text;
+      quoteDisplay.innerHTML = quote.split("").map(char => `<span>${char}</span>`).join("");
+      inputField.value = "";
+      inputField.disabled = false;
+      inputField.focus();
+      wpmDisplay.textContent = "WPM: 0";
+      accuracyDisplay.textContent = "Accuracy: 100%";
+      timeDisplay.textContent = "Time: 0s";
+      clearInterval(interval);
+      startTime = null;
+      interval = setInterval(updateTime, 1000);
+    }
+
+    function getQuoteByMode() {
+      const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+      if (selectedMode === "custom") {
+        const custom = customTextInput.value.trim();
+        if (!custom) {
+          alert("Please enter your custom text.");
+          return null;
+        }
+        return custom;
+      } else {
+        return quotes[Math.floor(Math.random() * quotes.length)];
+      }
+    }
+
+    function updateTime() {
+      if (!startTime) return;
+      const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+      timeDisplay.textContent = `Time: ${timeElapsed}s`;
+    }
+
+    inputField.addEventListener("input", () => {
+      const typedText = inputField.value;
+      const quoteSpans = quoteDisplay.querySelectorAll("span");
+
+      if (!startTime && typedText.length > 0) {
+        startTime = Date.now();
+      }
+
+      let correctChars = 0;
+      let totalTyped = typedText.length;
+
+      quoteSpans.forEach((span, index) => {
+        const char = typedText[index];
+        if (char == null) {
+          span.classList.remove("correct", "incorrect");
+        } else if (char === span.textContent) {
+          span.classList.add("correct");
+          span.classList.remove("incorrect");
+          correctChars++;
+        } else {
+          span.classList.add("incorrect");
+          span.classList.remove("correct");
+        }
+      });
+
+      const accuracy = totalTyped === 0 ? 100 : Math.round((correctChars / totalTyped) * 100);
+      accuracyDisplay.textContent = `Accuracy: ${accuracy}%`;
+
+      if (typedText === quote) {
+        const timeTaken = (Date.now() - startTime) / 1000;
+        const words = quote.trim().split(/\s+/).length;
+        const wpm = Math.round((words / timeTaken) * 60);
+        wpmDisplay.textContent = `WPM: ${wpm}`;
+        inputField.disabled = true;
+        clearInterval(interval);
+        updateBestWpm(wpm);
+      }
+    });
+
+    restartBtn.addEventListener("click", () => {
+      const text = getQuoteByMode();
+      if (text) {
+        setQuoteText(text);
+      }
+    });
+
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+      radio.addEventListener("change", () => {
+        customTextBox.style.display = radio.value === "custom" ? "block" : "none";
+      });
+    });
+
+    themeToggleBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      document.body.classList.toggle("light");
+    });
+
+    // Initialize
+    loadBestWpm();
+    setQuoteText(quotes[Math.floor(Math.random() * quotes.length)]);
+  </script>
+</body>
+</html>
